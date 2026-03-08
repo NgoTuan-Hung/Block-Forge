@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bdd26198b2a89d4ebe586b1bad8f46b, type: 3}
+  m_Name: LevelData
+  m_EditorClassIdentifier: Assembly-CSharp::BlockBlast.LevelData
+  BoardSizeX: 8
+  BoardSizeY: 8
+  CellSize: 1
+  BaseShapes:
+  - {fileID: 7770146566558579242, guid: 580d386902de7b94e9276b971ccce8ab, type: 3}
+  - {fileID: 4858815988653658411, guid: 1f2a76421fdaf084a8239c435065ce61, type: 3}
+  - {fileID: 7932493778485663391, guid: 86e20ec0e9a16714295eb1d50d41ed69, type: 3}
+  - {fileID: 4834405582242127267, guid: f93cf3011b985b940929590b64629c72, type: 3}
+  - {fileID: 4015468896010217659, guid: d9e8a720633d78a44a3b4ce0b84820c5, type: 3}
+  - {fileID: 2352925587585193945, guid: 5cfb62e4455417e4bb9e577c65f3676e, type: 3}
