@@ -34,5 +34,7 @@ namespace BlockBlast
         }
 
         public void ChangeColor(Color color) => _bg.color = color;
+
+        public Color GetColor() => _bg.color;
     }
 }

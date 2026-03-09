@@ -9,6 +9,8 @@ namespace BlockBlast
         public List<Part> Parts { get; private set; }
         public Part Origin { get; private set; }
         private Collider2D _collider2D;
+        private Vector3 _idlePos;
+        public static Vector3 IdleScale = new Vector3(0.5f, 0.5f, 1f);
 
         private void OnValidate()
         {
@@ -39,6 +41,13 @@ namespace BlockBlast
             ChangePartsColor();
         }
 
+        public Shape Setup(Vector3 idlePos)
+        {
+            _idlePos = idlePos;
+            Idle();
+            return this;
+        }
+
         private void ChangePartsColor()
         {
             var color = Random.ColorHSV(
@@ -66,6 +75,17 @@ namespace BlockBlast
         {
             GameManager.IdentityController.RemoveIdentity(_collider2D.GetHashCode());
             Destroy(gameObject);
+        }
+
+        public void Idle()
+        {
+            transform.position = _idlePos;
+            transform.localScale = IdleScale;
+        }
+
+        public void Busy()
+        {
+            transform.localScale = Vector3.one;
         }
     }
 }

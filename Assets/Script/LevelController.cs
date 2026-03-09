@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BlockBlast.Shadow;
 using BlockBlast.Util;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace BlockBlast
     public class LevelController : MonoBehaviour
     {
         private LevelData _levelData;
+        private DataController dataController;
         private GameObject _cellPrefab;
         private GameObject _board;
         private Shape _draggingShape;
@@ -27,10 +29,18 @@ namespace BlockBlast
         private int _movesLeft,
             _movePerTurn;
         public event Action OnGameLose;
+        private ShapeShadow _shadow;
+        private bool _isFit;
 
-        public void Init(LevelData levelData, GameObject cellPrefab, Camera camera)
+        public void Init(
+            LevelData levelData,
+            DataController data,
+            GameObject cellPrefab,
+            Camera camera
+        )
         {
             _levelData = levelData;
+            dataController = data;
             _shapes = levelData.BaseShapes;
             _cellPrefab = cellPrefab;
             _board = new GameObject("Board");
@@ -50,6 +60,7 @@ namespace BlockBlast
             _movesLeft = _movePerTurn;
             OnGameLose = () => { };
             _genShapesThisTurn = new();
+            _shadow = dataController.Shadow;
             GenerateBoard();
             ShowShapesForPlayer(_movePerTurn);
         }
@@ -97,11 +108,15 @@ namespace BlockBlast
                     _draggingShape = GameManager
                         .IdentityController.GetIdentity(hit.collider.GetHashCode())
                         .GetComponent<Shape>();
+                    _draggingShape.Busy();
+
+                    _shadow.ChangeShape(_draggingShape);
                 }
             }
 
             if (Input.GetMouseButton(0))
             {
+                _isFit = false;
                 if (_draggingShape)
                 {
                     _pointerPos = _camera.ScreenToWorldPoint(Input.mousePosition.WithZ(_mouseZ));
@@ -111,53 +126,86 @@ namespace BlockBlast
                             _draggingShape.transform.position
                             - _draggingShape.Origin.View.transform.position
                         );
+
+                    _isFit = CheckFit(_draggingShape, _pointerPos);
                 }
             }
 
             if (Input.GetMouseButtonUp(0))
             {
-                if (_draggingShape && _bound.Contains(_pointerPos))
+                if (_draggingShape)
                 {
-                    FitToBoard(_draggingShape);
+                    if (_isFit)
+                        FitToBoard(_draggingShape);
+                    else
+                        _draggingShape.Idle();
+
+                    _shadow.Hide();
+                    _draggingShape = null;
                 }
-                _draggingShape = null;
             }
+        }
+
+        bool CheckFit(Shape shape, Vector2 pos)
+        {
+            if (_bound.Contains(_pointerPos))
+            {
+                var index = GetCellIndex(pos);
+                var cell = _cells[index.x][index.y];
+
+                if (IsShapeFit(shape, index))
+                {
+                    _shadow.Place(cell);
+                    return true;
+                }
+                else
+                    _shadow.Hide();
+            }
+
+            return false;
+        }
+
+        Vector2Int GetCellIndex(Vector2 pos)
+        {
+            pos = new((float)Math.Floor(pos.x) + 0.5f, (float)Math.Floor(pos.y) + 0.5f);
+            return new(Mathf.RoundToInt(_origin.y - pos.y), Mathf.RoundToInt(pos.x - _origin.x));
         }
 
         void FitToBoard(Shape shape)
         {
-            Vector2 targetPos = new(
-                (float)Math.Floor(_pointerPos.x) + 0.5f,
-                (float)Math.Floor(_pointerPos.y) + 0.5f
-            );
-            Vector2Int cellIndex = new(
-                Mathf.RoundToInt(_origin.y - targetPos.y),
-                Mathf.RoundToInt(targetPos.x - _origin.x)
-            );
+            _explodeRowsCheck.Clear();
+            _explodeColsCheck.Clear();
+            shape.Parts.ForEach(part =>
+            {
+                _cells[part.FitIndex.x][part.FitIndex.y].SetPart(part);
+                _explodeRowsCheck.Add(part.FitIndex.x);
+                _explodeColsCheck.Add(part.FitIndex.y);
+            });
 
+            _genShapesThisTurn.Remove(shape);
+            shape.DestroyShape();
+            TryExplode();
+
+            _movesLeft--;
+            if (_movesLeft <= 0)
+            {
+                ShowShapesForPlayer(_movePerTurn);
+                _movesLeft = _movePerTurn;
+            }
+            else
+                CheckLoseCondition();
+        }
+
+        void AddShadowIfFit(Shape shape, Vector2Int cellIndex)
+        {
+            var cell = _cells[cellIndex.x][cellIndex.y];
             if (IsShapeFit(shape, cellIndex))
             {
-                _explodeRowsCheck.Clear();
-                _explodeColsCheck.Clear();
-                shape.Parts.ForEach(part =>
-                {
-                    _cells[part.FitIndex.x][part.FitIndex.y].SetPart(part);
-                    _explodeRowsCheck.Add(part.FitIndex.x);
-                    _explodeColsCheck.Add(part.FitIndex.y);
-                });
-
-                _genShapesThisTurn.Remove(shape);
-                shape.DestroyShape();
-                TryExplode();
-
-                _movesLeft--;
-                if (_movesLeft <= 0)
-                {
-                    ShowShapesForPlayer(_movePerTurn);
-                    _movesLeft = _movePerTurn;
-                }
-                else
-                    CheckLoseCondition();
+                _shadow.Place(cell);
+            }
+            else
+            {
+                _shadow.Hide();
             }
         }
 
@@ -299,16 +347,13 @@ namespace BlockBlast
             var shapePrefabs = GenerateShapesForPlayer(count);
             _genShapesThisTurn.Clear();
 
-            Vector3 origin = new(-5, -6);
+            Vector3 origin = new(-3f, -5.5f);
             for (int i = 0; i < shapePrefabs.Count; i++)
             {
                 _genShapesThisTurn.Add(
-                    Instantiate(
-                            shapePrefabs[i].gameObject,
-                            origin + new Vector3(5 * i, 0),
-                            Quaternion.identity
-                        )
+                    Instantiate(shapePrefabs[i].gameObject)
                         .GetComponent<Shape>()
+                        .Setup(origin + new Vector3(3f * i, 0))
                 );
             }
         }

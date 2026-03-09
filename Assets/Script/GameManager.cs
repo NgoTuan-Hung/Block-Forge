@@ -9,6 +9,7 @@ namespace BlockBlast
 
         [SerializeField]
         private DataController _data;
+        public static DataController Data => Instance._data;
         private LevelController _levelController;
 
         [SerializeField]
@@ -32,7 +33,7 @@ namespace BlockBlast
         void InitControllers()
         {
             _levelController = gameObject.AddComponent<LevelController>();
-            _levelController.Init(_data.LevelData, _data.CellPrefab, _camera);
+            _levelController.Init(_data.LevelData, _data, _data.CellPrefab, _camera);
             _uIController.Init(_levelController);
             _uIController.LoseButton.onClick.AddListener(RestartGame);
             _identityController = new();

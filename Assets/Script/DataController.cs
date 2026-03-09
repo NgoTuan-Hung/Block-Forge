@@ -1,4 +1,5 @@
 using System;
+using BlockBlast.Shadow;
 using UnityEngine;
 
 namespace BlockBlast
@@ -8,5 +9,7 @@ namespace BlockBlast
     {
         public LevelData LevelData;
         public GameObject CellPrefab;
+        public ShapeShadow Shadow;
+        public GameObject ShadowPart;
     }
 }
