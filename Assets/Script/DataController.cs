@@ -11,5 +11,6 @@ namespace BlockBlast
         public GameObject CellPrefab;
         public ShapeShadow Shadow;
         public GameObject ShadowPart;
+        public GameObject RowHightlight;
     }
 }

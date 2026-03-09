@@ -81,11 +81,18 @@ namespace BlockBlast
         {
             transform.position = _idlePos;
             transform.localScale = IdleScale;
+            Parts.ForEach(part => part.Idle());
         }
 
         public void Busy()
         {
             transform.localScale = Vector3.one;
+            Parts.ForEach(part => part.Busy());
+        }
+
+        public void CleanParts()
+        {
+            Parts.ForEach(part => part.Idle());
         }
     }
 }

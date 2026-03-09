@@ -44,8 +44,14 @@ TagManager:
   - name: Cell
     uniqueID: 1006943057
     locked: 0
+  - name: Highlight
+    uniqueID: 340581995
+    locked: 0
   - name: Part
     uniqueID: 868392897
+    locked: 0
+  - name: BusyPart
+    uniqueID: 499233747
     locked: 0
   - name: UI
     uniqueID: 544695491

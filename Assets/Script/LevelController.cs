@@ -31,6 +31,9 @@ namespace BlockBlast
         public event Action OnGameLose;
         private ShapeShadow _shadow;
         private bool _isFit;
+        private List<GameObject> _rowHightlights;
+        private GameObject _rowHightlightPrefab;
+        private List<Vector2Int> _excludeFromExplodeCheck;
 
         public void Init(
             LevelData levelData,
@@ -61,6 +64,9 @@ namespace BlockBlast
             OnGameLose = () => { };
             _genShapesThisTurn = new();
             _shadow = dataController.Shadow;
+            _rowHightlights = new();
+            _rowHightlightPrefab = dataController.RowHightlight;
+            _excludeFromExplodeCheck = new();
             GenerateBoard();
             ShowShapesForPlayer(_movePerTurn);
         }
@@ -146,6 +152,13 @@ namespace BlockBlast
             }
         }
 
+        /// <summary>
+        /// Check if the shape fit on the board
+        /// and place the shadow
+        /// </summary>
+        /// <param name="shape"></param>
+        /// <param name="pos"></param>
+        /// <returns></returns>
         bool CheckFit(Shape shape, Vector2 pos)
         {
             if (_bound.Contains(_pointerPos))
@@ -156,12 +169,12 @@ namespace BlockBlast
                 if (IsShapeFit(shape, index))
                 {
                     _shadow.Place(cell);
+                    CheckExplode(shape);
                     return true;
                 }
-                else
-                    _shadow.Hide();
             }
 
+            _shadow.Hide();
             return false;
         }
 
@@ -173,18 +186,15 @@ namespace BlockBlast
 
         void FitToBoard(Shape shape)
         {
-            _explodeRowsCheck.Clear();
-            _explodeColsCheck.Clear();
             shape.Parts.ForEach(part =>
             {
                 _cells[part.FitIndex.x][part.FitIndex.y].SetPart(part);
-                _explodeRowsCheck.Add(part.FitIndex.x);
-                _explodeColsCheck.Add(part.FitIndex.y);
             });
 
             _genShapesThisTurn.Remove(shape);
+            shape.CleanParts();
             shape.DestroyShape();
-            TryExplode();
+            ExplodeIfAny();
 
             _movesLeft--;
             if (_movesLeft <= 0)
@@ -194,19 +204,6 @@ namespace BlockBlast
             }
             else
                 CheckLoseCondition();
-        }
-
-        void AddShadowIfFit(Shape shape, Vector2Int cellIndex)
-        {
-            var cell = _cells[cellIndex.x][cellIndex.y];
-            if (IsShapeFit(shape, cellIndex))
-            {
-                _shadow.Place(cell);
-            }
-            else
-            {
-                _shadow.Hide();
-            }
         }
 
         bool IsShapeFit(Shape shape, Vector2Int cellIndex)
@@ -278,6 +275,112 @@ namespace BlockBlast
                     _explodeCols.Add(col);
             }
 
+            _explodeRows.ForEach(row => ExplodeRow(row));
+            _explodeCols.ForEach(col => ExplodeCol(col));
+        }
+
+        void CheckPotentialExplode(Shape shape)
+        {
+            _explodeRowsCheck.Clear();
+            _explodeColsCheck.Clear();
+            _excludeFromExplodeCheck.Clear();
+            shape.Parts.ForEach(part =>
+            {
+                _explodeRowsCheck.Add(part.FitIndex.x);
+                _explodeColsCheck.Add(part.FitIndex.y);
+                _excludeFromExplodeCheck.Add(part.FitIndex);
+            });
+        }
+
+        void CheckExplode(Shape shape)
+        {
+            CheckPotentialExplode(shape);
+            _explodeRows.Clear();
+            _explodeCols.Clear();
+            foreach (var row in _explodeRowsCheck)
+            {
+                bool explode = true;
+                for (int i = 0; i < _levelData.BoardSizeX; i++)
+                {
+                    if (_cells[row][i].IsBlank())
+                    {
+                        if (_excludeFromExplodeCheck.Contains(new Vector2Int(row, i)))
+                            continue;
+
+                        explode = false;
+                        break;
+                    }
+                }
+                if (explode)
+                    _explodeRows.Add(row);
+            }
+
+            foreach (var col in _explodeColsCheck)
+            {
+                bool explode = true;
+                for (int i = 0; i < _levelData.BoardSizeY; i++)
+                {
+                    if (_cells[i][col].IsBlank())
+                    {
+                        if (_excludeFromExplodeCheck.Contains(new Vector2Int(i, col)))
+                            continue;
+
+                        explode = false;
+                        break;
+                    }
+                }
+                if (explode)
+                    _explodeCols.Add(col);
+            }
+
+            PlaceRowHightlights();
+        }
+
+        void PlaceRowHightlights()
+        {
+            var total = _explodeRows.Count + _explodeCols.Count;
+
+            if (_rowHightlights.Count > total)
+            {
+                for (int i = total; i < _rowHightlights.Count; i++)
+                {
+                    _rowHightlights[i].gameObject.SetActive(false);
+                }
+            }
+
+            int index = 0;
+
+            foreach (var row in _explodeRows)
+            {
+                if (index >= _rowHightlights.Count)
+                {
+                    var rowHightlight = Instantiate(_rowHightlightPrefab);
+                    _rowHightlights.Add(rowHightlight);
+                }
+
+                _rowHightlights[index].SetActive(true);
+                _rowHightlights[index].transform.position = new Vector3(0, _origin.y - row, 0);
+                _rowHightlights[index].transform.rotation = Quaternion.Euler(0, 0, 0);
+                index++;
+            }
+
+            foreach (var col in _explodeCols)
+            {
+                if (index >= _rowHightlights.Count)
+                {
+                    var rowHightlight = Instantiate(_rowHightlightPrefab);
+                    _rowHightlights.Add(rowHightlight);
+                }
+
+                _rowHightlights[index].SetActive(true);
+                _rowHightlights[index].transform.position = new Vector3(_origin.x - col, 0, 0);
+                _rowHightlights[index].transform.rotation = Quaternion.Euler(0, 0, 90);
+                index++;
+            }
+        }
+
+        void ExplodeIfAny()
+        {
             _explodeRows.ForEach(row => ExplodeRow(row));
             _explodeCols.ForEach(col => ExplodeCol(col));
         }
