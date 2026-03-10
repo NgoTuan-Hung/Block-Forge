@@ -30,7 +30,7 @@ namespace BlockBlast
             View.transform.localPosition = Vector3.zero;
         }
 
-        public void Explode()
+        public void Clear()
         {
             Object.Destroy(View);
         }

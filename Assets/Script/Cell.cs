@@ -26,11 +26,11 @@ namespace BlockBlast
             part.SetCell(this);
         }
 
-        public void Explode()
+        public void Clear()
         {
             if (!IsBlank())
             {
-                Part.Explode();
+                Part.Clear();
                 Part = null;
             }
         }

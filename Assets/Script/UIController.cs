@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +11,10 @@ namespace BlockBlast
     {
         public GameObject LoseUI;
         public Button LoseButton;
+
+        [SerializeField]
+        private TextMeshProUGUI _scoreText,
+            _maxScoreText;
 
         public void Init(LevelController levelController)
         {
@@ -29,6 +35,16 @@ namespace BlockBlast
         public void Refresh()
         {
             LoseButton.onClick.RemoveAllListeners();
+        }
+
+        public void SetScore(int oldScore, int newScore, float duration)
+        {
+            //
+        }
+
+        private IEnumerator SetScoreCoroutine(int oldScore, int newScore, float duration)
+        {
+            yield break;
         }
     }
 }
